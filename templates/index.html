@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSpace - Your Mental Health Companion</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #667eea 50%, #89CFF0 75%, #B19CD9 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            padding: 1rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            animation: logoFloat 3s ease-in-out infinite;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+            border-radius: 25px;
+        }
+
+        .nav-links a:hover::before {
+            left: 0;
+        }
+
+        .nav-links a:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        /* 3D Background Canvas */
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            padding: 0 2rem;
+            animation: heroFadeIn 1.2s ease-out;
+        }
+
+        @keyframes heroFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            line-height: 1.2;
+        }
+
+        .hero .subtitle {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 2rem;
+            font-weight: 300;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ffa726);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 107, 107, 0.6);
+        }
+
+        /* Sections */
+        .section {
+            padding: 5rem 0;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 3rem;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Features Section */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            animation: cardFloat 6s ease-in-out infinite;
+        }
+
+        .feature-card:nth-child(2) { animation-delay: -2s; }
+        .feature-card:nth-child(3) { animation-delay: -4s; }
+        .feature-card:nth-child(4) { animation-delay: -6s; }
+
+        @keyframes cardFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s ease;
+            opacity: 0;
+        }
+
+        .feature-card:hover::before {
+            animation: shimmer 1.5s ease-in-out;
+            opacity: 1;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .feature-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: rotateY(360deg) scale(1.1);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        /* Chatbot Section */
+        .chatbot-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            margin: 3rem 0;
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chatbot-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff6b6b, #ffa726, #667eea, #764ba2);
+            background-size: 400% 100%;
+            animation: glowingBorder 3s ease infinite;
+        }
+
+        @keyframes glowingBorder {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .chatbot-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .chatbot-info h2 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .chatbot-info p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .chat-demo {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            transform: perspective(1000px) rotateY(-5deg);
+            transition: all 0.3s ease;
+        }
+
+        .chat-demo:hover {
+            transform: perspective(1000px) rotateY(0deg) scale(1.02);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1.5rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .chat-messages {
+            padding: 1.5rem;
+            height: 250px;
+            overflow-y: auto;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            animation: messageSlide 0.5s ease-out;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-bubble {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 18px;
+            max-width: 80%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-message.user .chat-bubble {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            padding: 3rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .footer-section p, .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            line-height: 1.6;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .social-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px) scale(1.1);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero .subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .chatbot-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .chat-demo {
+                transform: none;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="three-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                MindSpace
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#stress">Stress</a></li>
+                <li><a href="#anxiety">Anxiety</a></li>
+                <li><a href="#resources">Resources</a></li>
+                <li><a href="#chatbot">Chatbot</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>MindSpace</h1>
+            <p class="subtitle">Your Mental Health Companion</p>
+            <button class="cta-button" onclick="document.getElementById('chatbot').scrollIntoView({behavior: 'smooth'})">
+                Start Your Journey
+            </button>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section">
+        <div class="container">
+            <h2 class="section-title">Your Wellness Toolkit</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🧘</div>
+                    <h3>Stress Relief</h3>
+                    <p>Guided meditation and breathing exercises designed to help you manage stress and find inner peace in your daily life.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌿</div>
+                    <h3>Mindfulness</h3>
+                    <p>Practice mindfulness techniques that ground you in the present moment and help develop emotional awareness and resilience.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Therapy Support</h3>
+                    <p>Access to professional resources and tools that complement traditional therapy and support your mental health journey.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3>Community Support</h3>
+                    <p>Connect with a supportive community that understands your experiences and provides encouragement along the way.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chatbot Section -->
+    <section id="chatbot" class="section">
+        <div class="container">
+            <div class="chatbot-section">
+                <div class="chatbot-container">
+                    <div class="chatbot-info">
+                        <h2>Meet Your AI Companion</h2>
+                        <p>Our intelligent chatbot is available 24/7 to provide support, resources, and a listening ear whenever you need it. Start a conversation and take the first step towards better mental health.</p>
+                    <a href="/chat" class="cta-button">Start Chatting</a>
+                    </div>
+                    <div class="chat-demo">
+                        <div class="chat-header">
+                            <div class="chat-avatar">🤖</div>
+                            <div>
+                                <h4>MindSpace AI</h4>
+                                <p style="opacity: 0.8; font-size: 0.9rem;">Always here to help</p>
+                            </div>
+                        </div>
+                        <div class="chat-messages">
+                            <div class="chat-message">
+                                <div class="chat-bubble">
+                                    Hi there! I'm here to support your mental wellness journey. How are you feeling today?
+                                </div>
+                            </div>
+                            <div class="chat-message user">
+                                <div class="chat-bubble">
+                                    I've been feeling a bit anxious lately
+                                </div>
+                            </div>
+                            <div class="chat-message">
+                                <div class="chat-bubble">
+                                    I understand. Anxiety can be challenging. Would you like to try a quick breathing exercise that might help you feel more grounded?
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>MindSpace</h3>
+                    <p>Your trusted companion for mental health and wellness. We're here to support you every step of the way on your journey to better mental health.</p>
+                    <div class="social-icons">
+                        <div class="social-icon">📘</div>
+                        <div class="social-icon">🐦</div>
+                        <div class="social-icon">📷</div>
+                        <div class="social-icon">💼</div>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <p><a href="stress">Stress Management</a></p>
+                    <p><a href="anxiety">Anxiety Support</a></p>
+                    <p><a href="resources">Resources</a></p>
+                    <p><a href="/templates/chat.html">AI Chatbot</a></p>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>Email: support@mindspace.com</p>
+                    <p>Phone: +1 (555) 123-MIND</p>
+                    <p>Available 24/7 for crisis support</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Emergency</h3>
+                    <p>If you're in crisis, please reach out immediately:</p>
+                    <p><strong>Crisis Hotline: 988</strong></p>
+                    <p>You matter. You're not alone.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Three.js 3D Background
+        let scene, camera, renderer, particles, waves;
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('three-canvas'),
+                alpha: true,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+
+            // Create floating particles
+            createParticles();
+            createWaves();
+
+            camera.position.z = 5;
+            animate();
+        }
+
+        function createParticles() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 150;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 20;
+                positions[i + 1] = (Math.random() - 0.5) * 20;
+                positions[i + 2] = (Math.random() - 0.5) * 20;
+
+                // Soft pastel colors
+                colors[i] = 0.6 + Math.random() * 0.4;     // R
+                colors[i + 1] = 0.8 + Math.random() * 0.2; // G
+                colors[i + 2] = 0.9 + Math.random() * 0.1; // B
+
+                sizes[i / 3] = Math.random() * 3 + 1;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        function createWaves() {
+            const geometry = new THREE.PlaneGeometry(20, 20, 50, 50);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x4facfe,
+                transparent: true,
+                opacity: 0.1,
+                wireframe: true
+            });
+
+            waves = new THREE.Mesh(geometry, material);
+            waves.rotation.x = -Math.PI / 2;
+            waves.position.y = -8;
+            scene.add(waves);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animate particles
+            if (particles) {
+                particles.rotation.x += 0.001;
+                particles.rotation.y += 0.002;
+                
+                const positions = particles.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += Math.sin(Date.now() * 0.001 + positions[i]) * 0.001;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Animate waves
+            if (waves) {
+                const positions = waves.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const x = positions[i];
+                    const y = positions[i + 1];
+                    positions[i + 2] = Math.sin(x * 0.1 + Date.now() * 0.002) * 0.5 +
+                                       Math.sin(y * 0.1 + Date.now() * 0.003) * 0.3;
+                }
+                waves.geometry.attributes.position.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Parallax effect on scroll
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            
+            if (particles) {
+                particles.position.y = rate * 0.002;
+            }
+        });
+
+        // Initialize
+        initThreeJS();
+
+        // Add floating animation to feature cards
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationDelay = '0s';
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
