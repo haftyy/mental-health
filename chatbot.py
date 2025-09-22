@@ -1,57 +1,82 @@
-import streamlit as st
+# chatbot.py
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import (
+    AutoImageProcessor,
+    AutoModelForImageClassification,
+    AutoTokenizer,
+    AutoModelForCausalLM,
+)
+from PIL import Image
 
-# Model repo
-model_name = "tanusrich/Mental_Health_Chatbot"
 
-# Load tokenizer and model in fp16
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    trust_remote_code=True,
-    torch_dtype=torch.float16,   # use half precision to save VRAM
-    device_map="auto"            # let HF place layers across GPU/CPU if needed
+# ------------------------------
+# 1. Load Skin Disease Model (image classification)
+# ------------------------------
+image_model_name = "Jayanth2002/dinov2-base-finetuned-SkinDisease"
+processor = AutoImageProcessor.from_pretrained(image_model_name)
+image_model = AutoModelForImageClassification.from_pretrained(image_model_name)
+
+
+# ------------------------------
+# 2. Load Text Model (chatbot)
+# ------------------------------
+text_model_name = "mistralai/Mistral-7B-Instruct-v0.2"
+tokenizer = AutoTokenizer.from_pretrained(text_model_name)
+text_model = AutoModelForCausalLM.from_pretrained(
+    text_model_name, torch_dtype=torch.float16, device_map="auto"
 )
 
-# Check device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"✅ Model loaded on: {device}")
 
-def generate_response(user_input: str,
-                      max_new_tokens: int = 200,
-                      temperature: float = 0.7,
-                      top_k: int = 50,
-                      top_p: float = 0.9,
-                      repetition_penalty: float = 1.2) -> str:
-    prompt = f"User: {user_input}\nAssistant:"
+# ------------------------------
+# 3. Main function
+# ------------------------------
+def chatbot_reply(user_input: str, image_path: str = None) -> str:
+    """
+    If image_path is provided -> classify skin disease.
+    Otherwise -> generate text reply.
+    """
 
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, padding=True).to(device)
+    # Handle image case
+    if image_path:
+        try:
+            image = Image.open(image_path).convert("RGB")
+            inputs = processor(images=image, return_tensors="pt").to(image_model.device)
+            outputs = image_model(**inputs)
+            predicted_class = outputs.logits.argmax(-1).item()
+            label = image_model.config.id2label[predicted_class]
+            return f"🩺 My analysis suggests this looks like **{label}**. Please consult a dermatologist for confirmation."
+        except Exception as e:
+            return f"⚠️ Error analyzing image: {str(e)}"
 
-    with torch.no_grad():
-        outputs = model.generate(
+    # Handle text case
+    try:
+        inputs = tokenizer(
+            user_input,
+            return_tensors="pt",
+            truncation=True,
+            padding=True
+        ).to(text_model.device)
+
+        outputs = text_model.generate(
             **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
-            repetition_penalty=repetition_penalty,
-            pad_token_id=tokenizer.eos_token_id,
-            do_sample=True
+            max_new_tokens=200,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9,
         )
 
-    decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    response = decoded.split("Assistant:")[-1].strip()
-    return response
+        reply = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return reply
+    except Exception as e:
+        return f"⚠️ Error generating reply: {str(e)}"
 
+
+# ------------------------------
+# 4. Local test
+# ------------------------------
 if __name__ == "__main__":
-    print("🤖 Chatbot is ready! Type 'exit' or 'quit' to stop.")
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() in ["exit", "quit"]:
-            print("Chatbot: Take care!")
-            break
-        resp = generate_response(user_input)
-        print("Chatbot:", resp)
-def chatbot_reply(user_input: str) -> str:
-    return generate_response(user_input)
+    print("💬 Text Test:")
+    print(chatbot_reply("Hello, I feel stressed these days."))
+
+    print("\n🖼️ Image Test:")
+    print(chatbot_reply("", image_path="test_skin.jpg"))  # replace with your test image
