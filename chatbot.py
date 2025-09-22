@@ -8,35 +8,23 @@ from transformers import (
 )
 from PIL import Image
 
-
-# ------------------------------
-# 1. Load Skin Disease Model (image classification)
-# ------------------------------
 image_model_name = "Jayanth2002/dinov2-base-finetuned-SkinDisease"
 processor = AutoImageProcessor.from_pretrained(image_model_name)
 image_model = AutoModelForImageClassification.from_pretrained(image_model_name)
 
 
-# ------------------------------
-# 2. Load Text Model (chatbot)
-# ------------------------------
 text_model_name = "mistralai/Mistral-7B-Instruct-v0.2"
 tokenizer = AutoTokenizer.from_pretrained(text_model_name)
 text_model = AutoModelForCausalLM.from_pretrained(
     text_model_name, torch_dtype=torch.float16, device_map="auto"
 )
 
-
-# ------------------------------
-# 3. Main function
-# ------------------------------
 def chatbot_reply(user_input: str, image_path: str = None) -> str:
     """
     If image_path is provided -> classify skin disease.
     Otherwise -> generate text reply.
     """
 
-    # Handle image case
     if image_path:
         try:
             image = Image.open(image_path).convert("RGB")
@@ -48,7 +36,7 @@ def chatbot_reply(user_input: str, image_path: str = None) -> str:
         except Exception as e:
             return f"⚠️ Error analyzing image: {str(e)}"
 
-    # Handle text case
+
     try:
         inputs = tokenizer(
             user_input,
@@ -71,12 +59,9 @@ def chatbot_reply(user_input: str, image_path: str = None) -> str:
         return f"⚠️ Error generating reply: {str(e)}"
 
 
-# ------------------------------
-# 4. Local test
-# ------------------------------
 if __name__ == "__main__":
     print("💬 Text Test:")
     print(chatbot_reply("Hello, I feel stressed these days."))
 
     print("\n🖼️ Image Test:")
-    print(chatbot_reply("", image_path="test_skin.jpg"))  # replace with your test image
+    print(chatbot_reply("", image_path="test_skin.jpg")) 
